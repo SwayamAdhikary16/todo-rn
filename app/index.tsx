@@ -12,10 +12,19 @@ import {
   View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-type ToDoType = { id: number; title: string; description: string; isDone: boolean; };
+
+type ToDoType = { id: number; title: string; description: string; isDone: boolean };
 
 // TodoItem component
-const TodoItem = ({ todo }:{todo: ToDoType}) => (
+const TodoItem = ({
+  todo,
+  onDelete,
+  onToggle,
+}: {
+  todo: ToDoType;
+  onDelete: (id: number) => void;
+  onToggle: (id: number) => void;
+}) => (
   <View style={styles.todoItem}>
     <View style={styles.todoRow}>
       <View style={styles.todoLeft}>
@@ -23,71 +32,86 @@ const TodoItem = ({ todo }:{todo: ToDoType}) => (
           value={todo.isDone}
           color={todo.isDone ? "#4630EB" : undefined}
           style={styles.checkbox}
+          onValueChange={() => onToggle(todo.id)}
         />
         <View>
           <Text
             style={[
               styles.todoTitle,
-              todo.isDone && { textDecorationLine: "line-through" },
+              todo.isDone && { textDecorationLine: "line-through", color: "#888" },
             ]}
           >
             {todo.title}
           </Text>
-          <Text style={styles.todoDesc}>
+          <Text
+            style={[
+              styles.todoDesc,
+              todo.isDone && { textDecorationLine: "line-through", color: "#aaa" },
+            ]}
+          >
             {todo.description.split(" ").slice(0, 4).join(" ")}
           </Text>
         </View>
       </View>
-      <TouchableOpacity onPress={() => alert("Delete " + todo.id)}>
+      <TouchableOpacity onPress={() => onDelete(todo.id)}>
         <Ionicons name="trash" size={24} color="red" />
       </TouchableOpacity>
     </View>
   </View>
 );
 
-// Main screen
 export default function Index() {
   const [searchQuery, setSearchQuery] = useState("");
   const [imageError, setImageError] = useState(false);
   const [isAddVisible, setIsAddVisible] = useState(false);
-
-
-
-  const todoData = [
+  const [todos, setTodos] = useState<ToDoType[]>([
     { id: 1, title: "Todo 1", description: "This is the first todo", isDone: false },
     { id: 2, title: "Todo 2", description: "This is the second todo", isDone: false },
     { id: 3, title: "Todo 3", description: "This is the third todo", isDone: false },
-  ]
+  ]);
+  const [todoText, setTodoText] = useState("");
+  const [todoDesctext, setTodoDesctext] = useState("");
 
-  const [todos, setTodos] = useState<ToDoType[]>(todoData);
-  const [todoText, setTodoText] = useState<string>("");
-  const [todoDesctext, setTodoDesctext] = useState<string>("");
   const addTodo = () => {
+    if (!todoText.trim()) return;
     const newTodo = {
-      id: Math.random(),
+      id: Date.now(),
       title: todoText,
       description: todoDesctext,
       isDone: false,
     };
-    setTodos([...todos, newTodo]);
+    setTodos((prev) => [newTodo, ...prev]);
     setTodoText("");
     setTodoDesctext("");
-  }
+    setIsAddVisible(false);
+  };
 
-  const filteredData = todos.filter((item) =>
-    item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.description.toLowerCase().includes(searchQuery.toLowerCase())
+  const deleteTodo = (id: number) => {
+    setTodos((prev) => prev.filter((todo) => todo.id !== id));
+  };
+
+  const toggleTodoDone = (id: number) => {
+    setTodos((prev) =>
+      prev.map((todo) =>
+        todo.id === id ? { ...todo, isDone: !todo.isDone } : todo
+      )
+    );
+  };
+
+  const filteredData = todos.filter(
+    (item) =>
+      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
-   
-
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => alert("Menu Pressed")}>
           <Ionicons name="menu" size={24} color="black" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => alert("Add Todo Pressed")}>
+        <TouchableOpacity onPress={() => alert("Profile Pressed")}>
           <Image
             source={{
               uri: imageError
@@ -100,6 +124,7 @@ export default function Index() {
         </TouchableOpacity>
       </View>
 
+      {/* Search */}
       <View style={styles.searchBar}>
         <Ionicons name="search" size={20} color="black" />
         <TextInput
@@ -111,33 +136,33 @@ export default function Index() {
         />
       </View>
 
+      {/* Todo List */}
       <FlatList
-        data={[...todos].reverse()}
+        data={filteredData}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <TodoItem todo={item} />
+          <TodoItem todo={item} onDelete={deleteTodo} onToggle={toggleTodoDone} />
         )}
       />
 
+      {/* Add Todo */}
       <KeyboardAvoidingView behavior="padding" keyboardVerticalOffset={20}>
         {isAddVisible && (
           <View style={styles.addTaskContainer}>
             <TextInput
               placeholder="Task Title"
-              onChangeText={(text)=> setTodoText(text)}
               value={todoText}
+              onChangeText={setTodoText}
               style={styles.newTodoInput}
-              autoCorrect={false}
             />
             <TextInput
               placeholder="Task Description"
-              onChangeText={(text)=> setTodoDesctext(text)}
               value={todoDesctext}
+              onChangeText={setTodoDesctext}
               style={styles.newTodoInput}
-              autoCorrect={false}
               multiline
             />
-            <TouchableOpacity style={styles.addConfirmButton} onPress={() => addTodo()}>
+            <TouchableOpacity style={styles.addConfirmButton} onPress={addTodo}>
               <Text style={styles.addConfirmButtonText}>Add Task</Text>
             </TouchableOpacity>
           </View>
