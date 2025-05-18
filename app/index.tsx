@@ -12,6 +12,10 @@ import {
   View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import axios from 'axios';
+import { AnimatedCircularProgress } from 'react-native-circular-progress';
+
+
 
 type ToDoType = { id: number; title: string; description: string; isDone: boolean };
 
@@ -104,6 +108,11 @@ export default function Index() {
       item.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const totalTasks = todos.length;
+const completedTasks = todos.filter((todo) => todo.isDone).length;
+const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -134,6 +143,26 @@ export default function Index() {
           style={styles.searchInput}
           clearButtonMode="always"
         />
+      </View>
+      <View style={{ alignItems: "center", marginBottom: 20 }}>
+        <AnimatedCircularProgress
+          size={150}
+          width={12}
+          fill={progress}
+          tintColor="#4CAF50"
+          backgroundColor="#E0E0E0"
+          duration={600}
+          lineCap="round"
+        >
+          {(fill: number) => (
+            <Text style={{ fontSize: 22, fontWeight: "bold" }}>
+              {Math.round(fill)}%
+            </Text>
+          )}
+        </AnimatedCircularProgress>
+        <Text style={{ marginTop: 8, fontSize: 16, color: "#555" }}>
+          {completedTasks} of {totalTasks} tasks completed
+        </Text>
       </View>
 
       {/* Todo List */}
